@@ -273,8 +273,8 @@ def _prepare_irq(self: CPU, isr: int):
 
 def irq(self: CPU, is_brk: bool):
     isr = self.bus.read(0xfffe) | self.bus.read(0xffff) << 8
-    _prepare_irq(self, isr)
     self.p.B = is_brk
+    _prepare_irq(self, isr)
     self.irq |= 0x80
 
 def nmi(self: CPU):
