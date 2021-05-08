@@ -56,7 +56,7 @@ class RAM(BusPart):
 
 
 class MMap(BusPart):
-    __slots__ = ("name", "data", "start_addr", "end_addr")
+    __slots__ = ("name", "data", "start_addr", "end_addr", "rom_file")
 
     def __init__(self, name: str, rom_file: typing.Union[str, typing.List[int], bytes], start_addr: int,
                  end_addr: int = -1, writable: bool = False, write_through: bool = True):
@@ -64,15 +64,8 @@ class MMap(BusPart):
         self.start_addr = start_addr
         self.writable = writable
         self.write_through = write_through
-        self.data = array.array("B")
-
-        if isinstance(rom_file, str):
-            with open(rom_file, "rb") as f:
-                self.data.frombytes(f.read())
-        elif isinstance(rom_file, bytes):
-            self.data.frombytes(rom_file)
-        else:
-            self.data.fromlist(rom_file)
+        self.rom_file = rom_file
+        self.data: typing.List[int] = self.reset()
 
         self.end_addr = end_addr if end_addr >= 0 else start_addr + len(self.data) - 1
 
@@ -82,8 +75,17 @@ class MMap(BusPart):
                              f" {hex(self.end_addr - self.start_addr + 1)} bytes")
 
     def reset(self):
-        if self.writable:
-            raise ValueError("Writable MMap can not be reset :(")
+        rom_file = self.rom_file
+        if isinstance(rom_file, str):
+            with open(rom_file, "rb") as f:
+                data = list(f.read())
+        elif isinstance(rom_file, bytes):
+            data = list(rom_file)
+        else:
+            data = rom_file.copy()
+
+        self.data = data
+        return data
 
     def read_address(self, addr: TAddr) -> BusRet:
         if self.start_addr <= addr <= self.end_addr:
@@ -104,7 +106,7 @@ class MMap(BusPart):
 
     def dump(self, fname: str):
         with open(fname, "wb") as f:
-            self.data.tofile(f)
+            array.array("B", self.data).tofile(f)
 
 
 class Bus:
@@ -121,13 +123,13 @@ class Bus:
         self.write_breakpoints = set()
         self.read_breakpoints = set()
 
-    def register(self, receiver: BusPart, before: typing.Optional[BusPart] = None):
+    def register(self, receiver: BusPart, before: typing.Optional[BusPart] = None, enabled: bool = True):
         if before is not None:
             to = self._parts.index(before)
             self._parts.insert(to, receiver)
         else:
             self._parts.append(receiver)
-        self._enabled.append(True)
+        self._enabled.append(enabled)
         return len(self._parts) - 1
 
     def set_enabled(self, index: int, enabled: bool):
