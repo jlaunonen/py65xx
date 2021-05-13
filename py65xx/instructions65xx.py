@@ -359,14 +359,14 @@ def cpy(self: CPU):
 # region Branching
 
 def _chk_jump(self: CPU):
-    # Might not be true after nmi/irq.
+    self.pc = self.addr_val
+
     if CHECK_STUCK and self.addr_val == self.spc:
         if not LOG.dis:
             self.fault_log("<stuck>")
         else:
             LOG.print("<stuck>")
         raise StopIteration
-    self.pc = self.addr_val
 
 def jmp(self: CPU):
     _chk_jump(self)

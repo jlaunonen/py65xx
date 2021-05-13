@@ -260,9 +260,11 @@ class CPU:
 
         except StopIteration:
             print("<break>")
+            return 2
         except KeyboardInterrupt:
             print("<stop>")
-        print(repr(self))
+            return 1
+        return 0
 
     def __repr__(self):
         return f"pc=${self.pc:04X}, sp=${self.sp:02X}, p={self.p}, A=${self.A:02X}, X=${self.X:02X}, Y=${self.Y:02X}"
