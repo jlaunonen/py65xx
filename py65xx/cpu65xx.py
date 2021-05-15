@@ -186,8 +186,9 @@ class CPU:
 
     def run(self, cycles: int = -1, step = False):
         self.bus.fault_handler = self.fault_log
+        end_cycles = self.clock.cycles + cycles
         try:
-            while cycles < 0 or self.clock.cycles < cycles:
+            while cycles < 0 or self.clock.cycles < end_cycles:
 
                 # Handle interrupt request, if any.
                 if self.irq:
