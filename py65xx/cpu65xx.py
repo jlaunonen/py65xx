@@ -170,6 +170,7 @@ class CPU:
         self.Y = 0
         self.X = 0
         self.clock.reset() # should take 6 cycles.
+        self.irq = self.IRQ.NONE
         self.load_reset()
 
     def load_reset(self):

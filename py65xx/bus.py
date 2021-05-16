@@ -110,11 +110,14 @@ class MMap(BusPart):
 
 
 class Bus:
-    __slots__ = ("_parts", "_enabled", "mem", "pc", "fault_handler", "write_breakpoints", "read_breakpoints")
+    __slots__ = (
+        "_parts", "_enabled", "_defaults", "mem", "pc", "fault_handler", "write_breakpoints", "read_breakpoints"
+    )
 
     def __init__(self):
         self._parts: typing.List[BusPart] = []
         self._enabled: typing.List[bool] = []
+        self._defaults: typing.List[bool] = []
         # Reference to memory reference which skips bus multiplexing.
         self.mem = None
         # Copy of CPU program counter.
@@ -130,6 +133,7 @@ class Bus:
         else:
             self._parts.append(receiver)
         self._enabled.append(enabled)
+        self._defaults.append(enabled)
         return len(self._parts) - 1
 
     def set_enabled(self, index: int, enabled: bool):
@@ -138,6 +142,8 @@ class Bus:
     def reset(self):
         for part in self._parts:
             part.reset()
+        for i, e in enumerate(self._defaults):
+            self._enabled[i] = e
 
     def read(self, addr: TAddr, silent=False) -> BusRet:
         ret = 0
