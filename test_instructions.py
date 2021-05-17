@@ -6,6 +6,7 @@ import time
 from py65xx.bus import Bus, MMap
 from py65xx.clock import Clock
 from py65xx.cpu65xx import CPU, BreakOp
+import py65xx.instructions65xx
 
 
 BIN = "6502_functional_test.bin"
@@ -35,6 +36,9 @@ def hash_test():
 def main():
     bus = Bus()
     clock = Clock()
+
+    # Ensure we stop when expected.
+    py65xx.instructions65xx.CHECK_STUCK = True
 
     cpu = CPU(bus, clock, history_length=16)
     cpu.reset()
