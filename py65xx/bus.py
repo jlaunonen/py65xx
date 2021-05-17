@@ -6,23 +6,8 @@ from __future__ import annotations
 import array
 import typing
 
+from .defs import TData, TAddr, BusRet, BusPart
 from .statelog import LOG
-
-TData = int
-TAddr = int
-BusRet = typing.Optional[typing.Union[TData, callable]]
-
-
-class BusPart:
-    def reset(self):
-        pass
-
-    def read_address(self, addr: TAddr) -> BusRet:
-        raise NotImplementedError()
-
-    def write_address(self, addr: TAddr, data: TData):
-        raise NotImplementedError()
-
 
 
 class RAM(BusPart):
