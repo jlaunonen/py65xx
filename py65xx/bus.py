@@ -6,27 +6,27 @@ from __future__ import annotations
 import array
 import typing
 
-from .defs import TData, TAddr, BusRet, BusPart
+from .defs import BusPart, BusRet, TAddr, TData
 from .statelog import LOG
 
 
 class RAM(BusPart):
     __slots__ = "mem"
-    CLEAR_BYTE = 0xff
+    CLEAR_BYTE = 0xFF
 
     def __init__(self):
-        self.mem = array.array('B', (self.CLEAR_BYTE for _ in range(65536)))
+        self.mem = array.array("B", (self.CLEAR_BYTE for _ in range(65536)))
 
     def reset(self):
         for i in range(len(self.mem)):
             self.mem[i] = self.CLEAR_BYTE
 
     def read_address(self, addr: TAddr) -> typing.Optional[TData]:
-        if 0x0000 <= addr <= 0xffff:
+        if 0x0000 <= addr <= 0xFFFF:
             return self.mem[addr]
 
     def write_address(self, addr: TAddr, data: TData):
-        if 0x0000 <= addr <= 0xffff:
+        if 0x0000 <= addr <= 0xFFFF:
             self.mem[addr] = data
 
     def __getitem__(self, item):
@@ -43,8 +43,15 @@ class RAM(BusPart):
 class MMap(BusPart):
     __slots__ = ("name", "data", "start_addr", "end_addr", "rom_file")
 
-    def __init__(self, name: str, rom_file: typing.Union[str, typing.List[int], bytes], start_addr: int,
-                 end_addr: int = -1, writable: bool = False, write_through: bool = True):
+    def __init__(
+        self,
+        name: str,
+        rom_file: typing.Union[str, typing.List[int], bytes],
+        start_addr: int,
+        end_addr: int = -1,
+        writable: bool = False,
+        write_through: bool = True,
+    ):
         self.name = name
         self.start_addr = start_addr
         self.writable = writable
@@ -55,9 +62,11 @@ class MMap(BusPart):
         self.end_addr = end_addr if end_addr >= 0 else start_addr + len(self.data) - 1
 
         if len(self.data) != (self.end_addr - self.start_addr + 1):
-            raise ValueError(f"Rom length {hex(len(self.data))} does not match target segment"
-                             f" {hex(self.start_addr)}-{hex(self.end_addr)},"
-                             f" {hex(self.end_addr - self.start_addr + 1)} bytes")
+            raise ValueError(
+                f"Rom length {hex(len(self.data))} does not match target segment"
+                f" {hex(self.start_addr)}-{hex(self.end_addr)},"
+                f" {hex(self.end_addr - self.start_addr + 1)} bytes"
+            )
 
     def reset(self):
         rom_file = self.rom_file
@@ -96,7 +105,14 @@ class MMap(BusPart):
 
 class Bus:
     __slots__ = (
-        "_parts", "_enabled", "_defaults", "mem", "pc", "fault_handler", "write_breakpoints", "read_breakpoints"
+        "_parts",
+        "_enabled",
+        "_defaults",
+        "mem",
+        "pc",
+        "fault_handler",
+        "write_breakpoints",
+        "read_breakpoints",
     )
 
     def __init__(self):
@@ -111,7 +127,12 @@ class Bus:
         self.write_breakpoints = set()
         self.read_breakpoints = set()
 
-    def register(self, receiver: BusPart, before: typing.Optional[BusPart] = None, enabled: bool = True):
+    def register(
+        self,
+        receiver: BusPart,
+        before: typing.Optional[BusPart] = None,
+        enabled: bool = True,
+    ):
         if before is not None:
             to = self._parts.index(before)
             self._parts.insert(to, receiver)
@@ -155,7 +176,7 @@ class Bus:
         return ret
 
     def write(self, addr: TAddr, data: TData):
-        if LOG.bus_write and (addr < 0x100 or addr > 0x1ff):
+        if LOG.bus_write and (addr < 0x100 or addr > 0x1FF):
             LOG.print(f"-> ${addr:04X}: ${data:02X}")
         if addr in self.write_breakpoints:
             breakpoint()
@@ -177,7 +198,9 @@ class Bus:
             return [self.read(i, silent=True) for i in range(item.start, item.stop)]
         return self.read(item, silent=True)
 
-    def find(self, part: typing.Type[BusPart], match_index: int = 0) -> typing.Optional[BusPart]:
+    def find(
+        self, part: typing.Type[BusPart], match_index: int = 0
+    ) -> typing.Optional[BusPart]:
         for p in self._parts:
             if type(p) == part:
                 if match_index == 0:

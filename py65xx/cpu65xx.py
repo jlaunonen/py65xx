@@ -2,6 +2,7 @@
 # Copyright (C) 2021  Jyrki Launonen
 
 from __future__ import annotations
+
 import collections
 import enum
 import typing
@@ -11,8 +12,8 @@ if typing.TYPE_CHECKING:
     from .clock import Clock
 
 from .instructions65xx import irq, nmi
-from .statelog import LOG
 from .iset65xx import ISet
+from .statelog import LOG
 
 OP = typing.Callable[["CPU"], typing.Any]
 
@@ -24,31 +25,35 @@ class BreakOp(typing.NamedTuple):
 
 
 class StatusMasks:
-    C = 1       # Carry
+    C = 1  # Carry
     Z = 1 << 1  # Zero
     I = 1 << 2  # IRQ Disable
     D = 1 << 3  # Decimal mode
     B = 1 << 4  # BRK
-    res = 1 << 5 # Reserved
+    res = 1 << 5  # Reserved
     V = 1 << 6  # Overflow
     N = 1 << 7  # Negative
 
     @classmethod
     def getter(cls, name):
         mask = getattr(cls, name)
+
         def inner(self):
             return self.val & mask > 0
+
         inner.__name__ = name
         return inner
 
     @classmethod
     def setter(cls, name):
         mask = getattr(cls, name)
+
         def inner(self, value):
             if value:
                 self.val |= mask
             else:
                 self.val &= ~mask
+
         inner.__name__ = name
         return inner
 
@@ -83,11 +88,14 @@ class Status:
         self.res = True
 
     def __repr__(self):
-        is_set =  "NVUBDIZC"
+        is_set = "NVUBDIZC"
         not_set = "nvubdizc"
-        return f"${self.val:02X}/" +\
-               "".join(is_set[i] if f else not_set[i]
-                       for i, f in enumerate([self.N, self.V, self.res, self.B, self.D, self.I, self.Z, self.C]))
+        return f"${self.val:02X}/" + "".join(
+            is_set[i] if f else not_set[i]
+            for i, f in enumerate(
+                [self.N, self.V, self.res, self.B, self.D, self.I, self.Z, self.C]
+            )
+        )
 
 
 def _sanitize(v: int):
@@ -95,7 +103,7 @@ def _sanitize(v: int):
     o = v
     if v < 0:
         o += 0x100
-    elif v > 0xff:
+    elif v > 0xFF:
         o -= 0x100
     assert 0 <= 0 < 256, f"{v:X} is not 8bit (result={o})"
     return o
@@ -104,12 +112,26 @@ def _sanitize(v: int):
 # noinspection PyPep8Naming
 class CPU:
     __slots__ = (
-        "bus", "clock", "pc", "stc", "sp", "p", "spc",
-    #    "A", "X", "Y",
-        "_A", "_X", "_Y",
-        "cmd_val", "data_val", "addr_val", "iset", "save", "breaks",
-        "history", "irq",
+        "bus",
+        "clock",
+        "pc",
+        "stc",
+        "sp",
+        "p",
+        "spc",
+        "_A",
+        "_X",
+        "_Y",
+        "cmd_val",
+        "data_val",
+        "addr_val",
+        "iset",
+        "save",
+        "breaks",
+        "history",
+        "irq",
     )
+
     class IRQ(enum.IntEnum):
         NONE = 0
         BRK = 1
@@ -120,13 +142,12 @@ class CPU:
         self.bus = bus
         self.clock = clock
 
-        self.pc = 0xfffc
-        self.spc = 0        # Start of current command
-        self.stc = 0x0100   # Bottom of stack.
-        self.sp = 0xFF      # Stack pointer, offset from bottom.
+        self.pc = 0xFFFC
+        self.spc = 0  # Start of current command
+        self.stc = 0x0100  # Bottom of stack.
+        self.sp = 0xFF  # Stack pointer, offset from bottom.
         self.p = Status()
         self._A = self._Y = self._X = 0
-        #self.A = self.Y = self.X = 0
 
         self.cmd_val = 0
         self.data_val = None  # Immediate value for operation.
@@ -169,23 +190,29 @@ class CPU:
         self.A = 0
         self.Y = 0
         self.X = 0
-        self.clock.reset() # should take 6 cycles.
+        self.clock.reset()  # should take 6 cycles.
         self.irq = self.IRQ.NONE
         self.load_reset()
 
     def load_reset(self):
-        self.pc = self.bus.read(0xfffc) | self.bus.read(0xfffd) << 8
+        self.pc = self.bus.read(0xFFFC) | self.bus.read(0xFFFD) << 8
 
     def print_stack(self):
         if LOG.stack:
-            LOG.print("%02X:" % self.sp, ", ".join("%02X" % self.bus.mem[t] for t in range(self.stc + 0xff, self.stc + self.sp, -1)))
+            LOG.print(
+                "%02X:" % self.sp,
+                ", ".join(
+                    "%02X" % self.bus.mem[t]
+                    for t in range(self.stc + 0xFF, self.stc + self.sp, -1)
+                ),
+            )
 
     def fault_log(self, msg: str):
         print(msg)
         for hpc in self.history:
             print(self.iset.dis(self.bus, hpc))
 
-    def run(self, cycles: int = -1, step = False):
+    def run(self, cycles: int = -1, step=False):
         self.bus.fault_handler = self.fault_log
         end_cycles = self.clock.cycles + cycles
         try:
@@ -195,13 +222,12 @@ class CPU:
                 if self.irq:
                     if self.irq == self.IRQ.BRK:
                         irq(self, is_brk=True)
-                    elif self.irq & 0x7f == self.IRQ.NMI:
+                    elif self.irq & 0x7F == self.IRQ.NMI:
                         nmi(self)
                     elif self.irq == self.IRQ.IRQ and not self.p.I:
                         irq(self, is_brk=False)
                     # Reset request so next request can occur even during handling.
                     self.irq = 0
-
 
                 # Continue instruction processing.
                 self.spc = spc = self.pc
@@ -256,9 +282,13 @@ class CPU:
                     LOG.print(repr(self))
                 if LOG.chk_cmd and self.pc - spc != b8s:
                     # N.B. This lies if the instruction was a jump.
-                    LOG.print(f"${spc:04X} Advanced {self.pc - spc} bytes, expected {b8s} bytes.")
+                    LOG.print(
+                        f"${spc:04X} Advanced {self.pc - spc} bytes, expected {b8s} bytes."
+                    )
                 if LOG.chk_clk and self.clock.cycles - sclk != ncycles:
-                    LOG.print(f"${spc:04X} Ticked {self.clock.cycles - sclk} cycles, expected {ncycles} cycles.")
+                    LOG.print(
+                        f"${spc:04X} Ticked {self.clock.cycles - sclk} cycles, expected {ncycles} cycles."
+                    )
 
         except StopIteration:
             print("<break>")
@@ -270,4 +300,3 @@ class CPU:
 
     def __repr__(self):
         return f"pc=${self.pc:04X}, sp=${self.sp:02X}, p={self.p}, A=${self.A:02X}, X=${self.X:02X}, Y=${self.Y:02X}"
-

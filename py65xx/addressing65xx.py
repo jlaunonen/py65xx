@@ -4,12 +4,15 @@
 from __future__ import annotations
 
 import typing
+
 if typing.TYPE_CHECKING:
     from .cpu65xx import CPU
 
 
 def afault(self: CPU):
     pass
+
+
 afault.dis = lambda x: ""
 
 
@@ -26,6 +29,8 @@ def aabs(self: CPU):
     self.clock.wait_cycle()
     self.addr_val = addr
     return _save_on_addr
+
+
 aabs.dis = lambda x: f"${x}"
 
 
@@ -33,6 +38,8 @@ def aabsx(self: CPU):
     aabs(self)
     self.addr_val += self.X
     return _save_on_addr
+
+
 aabsx.dis = lambda x: f"${x},X"
 
 
@@ -40,6 +47,8 @@ def aabsy(self: CPU):
     aabs(self)
     self.addr_val += self.Y
     return _save_on_addr
+
+
 aabsy.dis = lambda x: f"${x},Y"
 
 
@@ -48,11 +57,15 @@ def aimm(self: CPU):
     self.addr_val = None
     self.pc += 1
     self.clock.wait_cycle()
+
+
 aimm.dis = lambda x: f"#${x}"
 
 
 def aimpl(self: CPU):
     pass
+
+
 aimpl.dis = lambda x: ""
 
 
@@ -64,6 +77,8 @@ def aacc(self: CPU):
     self.data_val = self.A
     self.addr_val = None
     return _save_a
+
+
 aacc.dis = lambda x: "A"
 
 
@@ -72,6 +87,8 @@ def aind(self: CPU):
     self.pc += 2
     self.addr_val = self.bus.read(addr) | self.bus.read(addr + 1) << 8
     return _save_on_addr
+
+
 aind.dis = lambda x: f"${x},IND"
 
 
@@ -79,12 +96,14 @@ def aindx(self: CPU):
     base = self.bus.read(self.pc) + self.X
     self.pc += 1
     self.clock.wait_cycle()
-    if base > 0xff:
+    if base > 0xFF:
         base -= 0x100
     self.addr_val = self.bus.read(base) | self.bus.read(base + 1) << 8
     self.clock.wait_cycle()
     self.clock.wait_cycle()
     return _save_on_addr
+
+
 aindx.dis = lambda x: f"(${x},X)"
 
 
@@ -93,7 +112,7 @@ def aindy(self: CPU):
     self.pc += 1
     off = self.bus.read(zoff) + self.Y
     hb = self.bus.read(zoff + 1)
-    if off > 0xff:
+    if off > 0xFF:
         hb += 1
         off -= 0x100
     # self.addr_val = self.bus.read(off)
@@ -101,6 +120,8 @@ def aindy(self: CPU):
     self.clock.wait_cycle()
     self.clock.wait_cycle()
     return _save_on_addr
+
+
 aindy.dis = lambda x: f"(${x}),Y"
 
 
@@ -118,7 +139,7 @@ def _cpl(v: int) -> int:
     -1
     """
     if v >= 0x80:
-        return -((~v) & 0xff) - 1
+        return -((~v) & 0xFF) - 1
     return v
 
 
@@ -129,6 +150,8 @@ def arel(self: CPU):
     rel = _cpl(rel)
     self.addr_val = self.pc + rel
     return _save_on_addr
+
+
 arel.dis = lambda x: f"PC{_cpl(int(x, 16)):+}"
 
 
@@ -137,18 +160,26 @@ def azero(self: CPU):
     self.pc += 1
     self.addr_val = offset
     return _save_on_addr
+
+
 azero.dis = lambda x: f"${x},Z"
+
 
 def azerox(self: CPU):
     offset = self.bus.read(self.pc)
     self.pc += 1
-    self.addr_val = (offset + self.X) & 0xff
+    self.addr_val = (offset + self.X) & 0xFF
     return _save_on_addr
+
+
 azerox.dis = lambda x: f"${x},ZX"
+
 
 def azeroy(self: CPU):
     offset = self.bus.read(self.pc)
     self.pc += 1
-    self.addr_val = (offset + self.Y) & 0xff
+    self.addr_val = (offset + self.Y) & 0xFF
     return _save_on_addr
+
+
 azeroy.dis = lambda x: f"${x},ZY"

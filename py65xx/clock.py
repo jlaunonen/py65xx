@@ -4,15 +4,24 @@
 import time
 import typing
 
+
 class Clocked:
     def on_clock(self) -> typing.Optional[int]:
         raise NotImplementedError()
 
 
 class Clock:
-    __slots__ = ("_cycle_time_ns", "_last_cycle", "_s_waits", "_s_late", "cycles", "_cycle_listeners", "cpu")
+    __slots__ = (
+        "_cycle_time_ns",
+        "_last_cycle",
+        "_s_waits",
+        "_s_late",
+        "cycles",
+        "_cycle_listeners",
+        "cpu",
+    )
 
-    def __init__(self, two_mhz = False):
+    def __init__(self, two_mhz=False):
         self._cycle_time_ns = 500 if two_mhz else 1000
         self._last_cycle = 0
         self._s_waits = 0
@@ -37,4 +46,8 @@ class Clock:
                 self.cpu.irq = r
 
     def stats(self):
-        print(f"Waits: {self._s_waits}, late: {self._s_late}", sum(self._s_late), self.cycles)
+        print(
+            f"Waits: {self._s_waits}, late: {self._s_late}",
+            sum(self._s_late),
+            self.cycles,
+        )

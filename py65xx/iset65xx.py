@@ -30,7 +30,9 @@ class ISet:
     def __init__(self):
 
         # instruction, addressing, bytes, cycles
-        self.iset: typing.List[typing.Tuple[OP, OP, int, int]] = SetOnceList([(fault, afault, 1, 0)] * 256)
+        self.iset: typing.List[typing.Tuple[OP, OP, int, int]] = SetOnceList(
+            [(fault, afault, 1, 0)] * 256
+        )
 
         self.iset[0x02] = jam, aimpl, 2, 1
         self.iset[0x12] = jam, aimpl, 2, 1
@@ -44,7 +46,6 @@ class ISet:
         self.iset[0xB2] = jam, aimpl, 2, 1
         self.iset[0xD2] = jam, aimpl, 2, 1
         self.iset[0xF2] = jam, aimpl, 2, 1
-
 
         self.iset[0x00] = brk, aimpl, 1, 7
         self.iset[0x01] = ora, aindx, 2, 6
@@ -261,7 +262,12 @@ class ISet:
     def __getitem__(self, item):
         return self.iset[item]
 
-    def dis(self, mem: typing.Union[typing.List, Bus], start: int, end: typing.Optional[int] = None):
+    def dis(
+        self,
+        mem: typing.Union[typing.List, Bus],
+        start: int,
+        end: typing.Optional[int] = None,
+    ):
         i = start
         if end is None:
             _end = start
@@ -275,10 +281,10 @@ class ISet:
                 continue
             instr = self.iset[b]
             arg_len = instr[2] - 1
-            arg = mem[i + 1:i + 1 + arg_len]
+            arg = mem[i + 1 : i + 1 + arg_len]
             arg_hex = "".join(f"{a:02X}" for a in reversed(arg))
 
-            bs = " ".join(f"{a:02X}" for a in mem[i:i + 1 + arg_len])
+            bs = " ".join(f"{a:02X}" for a in mem[i : i + 1 + arg_len])
             if instr[0] == fault:
                 bs += " " + str(mem[i])
 

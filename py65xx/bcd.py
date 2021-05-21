@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2021  Jyrki Launonen
 
+
 def itobcd(i: int) -> int:
     """
     >>> itobcd(0)
@@ -30,4 +31,4 @@ def bcdtoi(bcd: int) -> int:
     :param bcd:
     :return:
     """
-    return (bcd & 0xf) + ((bcd & 0xf0) >> 4) * 10
+    return (bcd & 0xF) + ((bcd & 0xF0) >> 4) * 10

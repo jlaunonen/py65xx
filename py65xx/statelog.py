@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2021  Jyrki Launonen
 
+
 class Log:
     def __init__(self):
         self.dis = False
@@ -26,5 +27,6 @@ class Log:
     @staticmethod
     def print(*args, **kwargs):
         print(*args, **kwargs)
+
 
 LOG = Log()

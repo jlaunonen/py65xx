@@ -3,11 +3,10 @@
 import hashlib
 import time
 
+import py65xx.instructions65xx
 from py65xx.bus import Bus, MMap
 from py65xx.clock import Clock
 from py65xx.cpu65xx import CPU, BreakOp
-import py65xx.instructions65xx
-
 
 BIN = "6502_functional_test.bin"
 LST = "6502_functional_test.lst"

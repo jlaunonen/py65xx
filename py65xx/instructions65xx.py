@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import typing
+
 if typing.TYPE_CHECKING:
     from .cpu65xx import CPU
 
-from .statelog import LOG
 from .bcd import bcdtoi, itobcd
+from .statelog import LOG
 
 # Should JMP and B* instructions check for self-jump, which would stuck the CPU (until IQR/NMI)?
 CHECK_STUCK = True
@@ -24,6 +25,7 @@ def _data_or_read(self: CPU):
 
 
 # region General
+
 
 def fault(self: CPU):
     self.fault_log(f"Faulty code at ${self.pc - 1:04X}: ${self.cmd_val:02X}")
@@ -41,92 +43,113 @@ def jam(self: CPU):
 def nop(self: CPU):
     pass
 
+
 # endregion
 
 
 # region Load, store and transfer
 
+
 def lda(self: CPU):
     self.A = _data_or_read(self)
     self.p.update_by_value(self.A)
+
 
 def ldx(self: CPU):
     self.X = _data_or_read(self)
     self.p.update_by_value(self.X)
 
+
 def ldy(self: CPU):
     self.Y = _data_or_read(self)
     self.p.update_by_value(self.Y)
+
 
 def sta(self: CPU):
     self.bus.write(self.addr_val, self.A)
     self.clock.wait_cycle()
 
+
 def stx(self: CPU):
     self.bus.write(self.addr_val, self.X)
     self.clock.wait_cycle()
+
 
 def sty(self: CPU):
     self.bus.write(self.addr_val, self.Y)
     self.clock.wait_cycle()
 
+
 def _set_a(self: CPU, v):
     self.A = v
     self.p.update_by_value(v)
+
 
 def _set_x(self: CPU, v):
     self.X = v
     self.p.update_by_value(v)
 
+
 def _set_y(self: CPU, v):
     self.Y = v
     self.p.update_by_value(v)
 
+
 def tax(self: CPU):
     _set_x(self, self.A)
+
 
 def txa(self: CPU):
     _set_a(self, self.X)
 
+
 def tay(self: CPU):
     _set_y(self, self.A)
+
 
 def tya(self: CPU):
     _set_a(self, self.Y)
 
+
 def tsx(self: CPU):
     _set_x(self, self.sp)
 
+
 def txs(self: CPU):
     self.sp = self.X
+
 
 # endregion
 
 
 # region Arithmetics
 
+
 def inx(self: CPU):
     v = self.X + 1
-    if v > 0xff:
+    if v > 0xFF:
         v -= 0x100
     self.X = v
     self.clock.wait_cycle()
     self.p.update_by_value(self.X)
 
+
 def iny(self: CPU):
     v = self.Y + 1
-    if v > 0xff:
+    if v > 0xFF:
         v -= 0x100
     self.Y = v
     self.clock.wait_cycle()
     self.p.update_by_value(self.Y)
 
+
 def inc(self: CPU):
     v = self.bus.read(self.addr_val) + 1
-    if v > 0xff:
+    if v > 0xFF:
         v -= 0x100
     self.bus.write(self.addr_val, v)
     self.p.update_by_value(v)
+
 
 def dex(self: CPU):
     v = self.X - 1
@@ -136,6 +159,7 @@ def dex(self: CPU):
     self.clock.wait_cycle()
     self.p.update_by_value(self.X)
 
+
 def dey(self: CPU):
     v = self.Y - 1
     if v < 0:
@@ -144,12 +168,14 @@ def dey(self: CPU):
     self.clock.wait_cycle()
     self.p.update_by_value(self.Y)
 
+
 def dec(self: CPU):
     v = self.bus.read(self.addr_val) - 1
     if v < 0:
         v += 0x100
     self.bus.write(self.addr_val, v)
     self.p.update_by_value(v)
+
 
 def adc(self: CPU):
     """
@@ -175,7 +201,7 @@ def adc(self: CPU):
         b = bcdtoi(b)
 
     m = a + b
-    v = ((a & 0x80) ^ (b & 0x80))
+    v = (a & 0x80) ^ (b & 0x80)
     if self.p.C:
         m += 1
 
@@ -183,14 +209,15 @@ def adc(self: CPU):
         self.p.C = m > 99
         # Masking in itobcd.
     else:
-        self.p.C = m > 0xff
-        m &= 0xff
+        self.p.C = m > 0xFF
+        m &= 0xFF
 
     self.p.V = not v and ((a & 0x80) ^ (m & 0x80))
     if self.p.D:
         m = itobcd(m)
     self.p.update_by_value(m)
     self.A = m
+
 
 def sbc(self: CPU):
     """
@@ -216,7 +243,7 @@ def sbc(self: CPU):
         b = bcdtoi(b)
 
     m = a - b
-    v = ((a & 0x80) ^ (b & 0x80))
+    v = (a & 0x80) ^ (b & 0x80)
     if not self.p.C:
         m -= 1
         self.p.C = True
@@ -225,23 +252,25 @@ def sbc(self: CPU):
             # 0xff mask does bad things for negatives in decimal mode.
             m += 100
         self.p.C = False
-    m &= 0xff
+    m &= 0xFF
     self.p.V = v and ((a & 0x80) ^ (m & 0x80))
     if self.p.D:
         m = itobcd(m)
     self.p.update_by_value(m)
     self.A = m
 
+
 # endregion
 
 
 # region Subroutines and IRQs
 
+
 def jsr(self: CPU):
     # XXX: So, we save return address which points to middle of this instruction.
     # This is the way. It is adjusted back in rts.
     ra = self.pc - 1
-    self.bus.write(self.stc + self.sp - 1, ra & 0xff)
+    self.bus.write(self.stc + self.sp - 1, ra & 0xFF)
     self.clock.wait_cycle()
     self.bus.write(self.stc + self.sp, ra >> 8)
     self.clock.wait_cycle()
@@ -249,6 +278,7 @@ def jsr(self: CPU):
     self.pc = self.addr_val
     self.clock.wait_cycle()
     self.print_stack()
+
 
 def rts(self: CPU):
     self.clock.wait_cycle()
@@ -266,21 +296,24 @@ def rts(self: CPU):
 def _prepare_irq(self: CPU, isr: int):
     ra = self.pc
     _push(self, ra >> 8)
-    _push(self, ra & 0xff)
+    _push(self, ra & 0xFF)
     _push(self, self.p.val)
     self.pc = isr
     self.p.I = True
 
+
 def irq(self: CPU, is_brk: bool):
-    isr = self.bus.read(0xfffe) | self.bus.read(0xffff) << 8
+    isr = self.bus.read(0xFFFE) | self.bus.read(0xFFFF) << 8
     self.p.B = is_brk
     _prepare_irq(self, isr)
     self.irq |= 0x80
 
+
 def nmi(self: CPU):
-    isr = self.bus.read(0xfffa) | self.bus.read(0xfffb) << 8
+    isr = self.bus.read(0xFFFA) | self.bus.read(0xFFFB) << 8
     _prepare_irq(self, isr)
     self.irq |= 0x80
+
 
 def rti(self: CPU):
     self.p.load(_pop(self))
@@ -295,43 +328,53 @@ def brk(self: CPU):
     self.pc += 1  # why tho? and because of that, a nop is needed after this in program.
     self.irq = self.IRQ.BRK
 
+
 # endregion
 
 
 # region Processor state
 
+
 def clc(self: CPU):
     self.p.C = False
+
 
 def sec(self: CPU):
     self.p.C = True
 
+
 def cld(self: CPU):
     self.p.D = False
+
 
 def sed(self: CPU):
     self.p.D = True
 
+
 def cli(self: CPU):
     self.p.I = False
+
 
 def sei(self: CPU):
     self.p.I = True
 
+
 def clv(self: CPU):
     self.p.V = False
+
 
 # endregion
 
 
-
 # region Comparison and 'bit'
+
 
 def cmp(self: CPU):
     m = _data_or_read(self)
     v = self.A - m
     self.p.update_by_value(v)
     self.p.C = self.A >= m
+
 
 def bit(self: CPU):
     m = _data_or_read(self)
@@ -347,16 +390,19 @@ def cpx(self: CPU):
     self.p.update_by_value(v)
     self.p.C = self.X >= m
 
+
 def cpy(self: CPU):
     m = _data_or_read(self)
     v = self.Y - m
     self.p.update_by_value(v)
     self.p.C = self.Y >= m
 
+
 # endregion
 
 
 # region Branching
+
 
 def _chk_jump(self: CPU):
     self.pc = self.addr_val
@@ -368,53 +414,65 @@ def _chk_jump(self: CPU):
             LOG.print("<stuck>")
         raise StopIteration
 
+
 def jmp(self: CPU):
     _chk_jump(self)
+
 
 def bcs(self: CPU):
     if self.p.C:
         _chk_jump(self)
 
+
 def bcc(self: CPU):
     if not self.p.C:
         _chk_jump(self)
+
 
 def beq(self: CPU):
     if self.p.Z:
         _chk_jump(self)
 
+
 def bne(self: CPU):
     if not self.p.Z:
         _chk_jump(self)
+
 
 def bpl(self: CPU):
     if not self.p.N:
         _chk_jump(self)
 
+
 def bmi(self: CPU):
     if self.p.N:
         _chk_jump(self)
+
 
 def bvc(self: CPU):
     if not self.p.V:
         _chk_jump(self)
 
+
 def bvs(self: CPU):
     if self.p.V:
         _chk_jump(self)
+
 
 # endregion
 
 
 # region Bit operations
 
+
 def asl(self: CPU):
     # Can access a registers directly.
     v = _data_or_read(self)
     self.p.C = v & 0x80
-    v = (v << 1) & 0xff
+    v = (v << 1) & 0xFF
     self.save(self, v)
     self.p.update_by_value(v)
+
 
 def lsr(self: CPU):
     # Can access a registers directly.
@@ -430,9 +488,10 @@ def rol(self: CPU):
     v = _data_or_read(self)
     n = int(self.p.C)
     self.p.C = v & 0x80
-    v = ((v << 1) + n) & 0xff
+    v = ((v << 1) + n) & 0xFF
     self.save(self, v)
     self.p.update_by_value(v)
+
 
 def ror(self: CPU):
     # Can access a registers directly.
@@ -447,47 +506,59 @@ def ror(self: CPU):
 def iand(self: CPU):
     self.A = _data_or_read(self) & self.A
     self.p.update_by_value(self.A)
+
+
 iand.__name__ = "and"
+
 
 def ora(self: CPU):
     self.A = _data_or_read(self) | self.A
     self.p.update_by_value(self.A)
 
+
 def eor(self: CPU):
     self.A = _data_or_read(self) ^ self.A
     self.p.update_by_value(self.A)
+
 
 # endregion
 
 
 # region Stack operations
 
+
 def _push(self: CPU, val: int):
     self.bus.write(self.stc + self.sp, val)
     self.sp -= 1
     if self.sp < 0:
-        self.sp = 0xff
+        self.sp = 0xFF
     self.print_stack()
+
 
 def _pop(self: CPU) -> int:
     self.sp += 1
-    if self.sp > 0xff:
+    if self.sp > 0xFF:
         self.sp = 0
     self.print_stack()
     return self.bus.read(self.stc + self.sp)
 
+
 def php(self: CPU):
     _push(self, self.p.val)
+
 
 def plp(self: CPU):
     self.p.load(_pop(self))
     self.p.B = self.irq == 0
 
+
 def pha(self: CPU):
     _push(self, self.A)
+
 
 def pla(self: CPU):
     self.A = _pop(self)
     self.p.update_by_value(self.A)
+
 
 # endregion
