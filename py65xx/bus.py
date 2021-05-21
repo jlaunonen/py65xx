@@ -136,14 +136,20 @@ class Bus:
             breakpoint()
 
         # Check every part if they are enabled and supply given address.
-        for part, enabled in zip(self._parts, self._enabled):
-            if not enabled:
+        # Not using iterator / zip, as they are slower.
+        i = 0
+        e = len(self._parts)
+        while i < e:
+            if not self._enabled[i]:
+                i += 1
                 continue
+            part = self._parts[i]
             value = part.read_address(addr)
             if value is not None:
                 if not silent and LOG.bus_read:
                     LOG.print(f"<- ${addr:04X}: ${value:02X} ({part})")
                 return value
+            i += 1
         if not silent and LOG.bus_read:
             LOG.print(f"<- ${addr:04X}: ${ret:02X}")
         return ret
@@ -155,12 +161,16 @@ class Bus:
             breakpoint()
 
         # Try to write each enabled part, which might ignore the write if it is not in their area.
-        for part, enabled in zip(self._parts, self._enabled):
-            if not enabled:
+        i = 0
+        e = len(self._parts)
+        while i < e:
+            if not self._enabled[i]:
+                i += 1
                 continue
-            r = part.write_address(addr, data)
+            r = self._parts[i].write_address(addr, data)
             if r is not None and self.fault_handler is not None:
                 self.fault_handler(f"${self.pc:04X}: {r}")
+            i += 1
 
     def __getitem__(self, item):
         if isinstance(item, slice):
