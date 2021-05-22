@@ -12,7 +12,7 @@ from .statelog import LOG
 
 class RAM(BusPart):
     __slots__ = "mem"
-    CLEAR_BYTE = 0xFF
+    CLEAR_BYTE = 0x00
 
     def __init__(self):
         self.mem = array.array("B", (self.CLEAR_BYTE for _ in range(65536)))

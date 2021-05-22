@@ -12,7 +12,7 @@ from .bcd import bcdtoi, itobcd
 from .statelog import LOG
 
 # Should JMP and B* instructions check for self-jump, which would stuck the CPU (until IQR/NMI)?
-CHECK_STUCK = True
+CHECK_STUCK = False
 
 
 def _data_or_read(self: CPU):
